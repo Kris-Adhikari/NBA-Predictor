@@ -8,5 +8,4 @@ A machine learning project that predicts the probability of NBA championship out
 - Model trained using data from 1,337 games in the 2018-2019 NBA season.
 - Outputs probabilitiies for each team to win the 2018-2019 NBA championship
 #
-![Predicted Championship Probabilities](Output/probabilities.png)
 
