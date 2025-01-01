@@ -78,17 +78,22 @@ class NBAPlayoffPredictor:
         y_prob = self.model.predict_proba(X_test)[:, 1]
         accuracy = accuracy_score(y_test, y_pred)
         roc_auc = roc_auc_score(y_test, y_prob)
-        print(f"Model Accuracy: {accuracy:.2f}")
-        print(f"Model ROC-AUC: {roc_auc:.2f}")
+        print("Model Accuracy: " + str(round(accuracy, 2)))
+        print("Model ROC-AUC: " + str(round(roc_auc, 2)))
 
     def simulate_game(self, home_stats, away_stats):
         features = home_stats + away_stats
         prob = self.model.predict_proba([features])[0][1]
-        return 1 if random.random() < prob else 0
+        if random.random() < prob:
+            return 1
+        else:
+            return 0
 
     def run_tournament_simulation(self, playoff_teams, simulations=1000):
-        print(f"\nRunning {simulations} tournament simulations...")
-        championship_counts = {team: 0 for team, _, _ in playoff_teams}
+        print("\nRunning " + str(simulations) + " tournament simulations...")
+        championship_counts = {}
+        for team, i, j in playoff_teams:
+            championship_counts[team] = 0
 
         for sim in range(simulations):
             teams = playoff_teams.copy()
@@ -97,10 +102,10 @@ class NBAPlayoffPredictor:
             while len(teams) > 1:
                 next_round = []
                 for i in range(0, len(teams), 2):
-                    if i+1 >= len(teams):
+                    if i + 1 >= len(teams):
                         next_round.append(teams[i])
                         continue
-                    team1, team2 = teams[i], teams[i+1]
+                    team1, team2 = teams[i], teams[i + 1]
                     team1_name, team1_id, team1_wins = team1
                     team2_name, team2_id, team2_wins = team2
 
@@ -114,7 +119,10 @@ class NBAPlayoffPredictor:
                     ]
 
                     if team1_games.empty or team2_games.empty:
-                        winner = team1 if random.random() < 0.5 else team2
+                        if random.random() < 0.5:
+                            winner = team1
+                        else:
+                            winner = team2
                         next_round.append(winner)
                         continue
 
@@ -146,7 +154,10 @@ class NBAPlayoffPredictor:
                     ]
 
                     game_result = self.simulate_game(team1_avg_stats, team2_avg_stats)
-                    winner = team1 if game_result == 1 else team2
+                    if game_result == 1:
+                        winner = team1
+                    else:
+                        winner = team2
                     next_round.append(winner)
                 
                 teams = next_round
@@ -154,12 +165,18 @@ class NBAPlayoffPredictor:
             champion = teams[0][0]
             championship_counts[champion] += 1
 
-        championship_probabilities = {team: (count / simulations) * 100 for team, count in championship_counts.items()}
+        championship_probabilities = {}
+        for team, count in championship_counts.items():
+            championship_probabilities[team] = (count / simulations) * 100
 
         print("\nChampionship probabilities:")
         sorted_teams = sorted(championship_probabilities.items(), key=lambda item: item[1], reverse=True)
+        teams = []
+        probs = []
         for team, prob in sorted_teams:
-            print(f"{team}: {prob:.1f}%")
+            teams.append(team)
+            probs.append(prob)
+            print(team + ": " + str(round(prob, 1)) + "%")
 
         self.visualize_probabilities(championship_probabilities)
 
@@ -172,8 +189,11 @@ class NBAPlayoffPredictor:
         team_probs_list = list(team_probabilities.items())
         team_probs_list.sort(reverse=True, key=lambda item: item[1])
         sorted_teams = team_probs_list
-        teams = [team for team, _ in sorted_teams]
-        probs = [prob for _, prob in sorted_teams]
+        teams = []
+        probs = []
+        for team, prob in sorted_teams:
+            teams.append(team)
+            probs.append(prob)
         colors = ['#FF0000', '#4CAF50', '#2196F3', '#9C27B0', '#FF9800'] * 3
         bars = ax.bar(range(len(teams)), probs, color=colors[:len(teams)])
         
@@ -181,7 +201,7 @@ class NBAPlayoffPredictor:
             bar = bars[i]
             x_position = bar.get_x() + bar.get_width() / 2
             y_position = bar.get_height()
-            label = f'{probs[i]:.1f}%'
+            label = str(round(probs[i], 1)) + '%'
             ax.text(x_position, y_position, label, ha='center', va='bottom', color='white', fontweight='bold')
         
         ax.set_title('NBA Championship Probability by Team', pad=20, color='white')
